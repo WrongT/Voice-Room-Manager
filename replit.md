@@ -16,6 +16,25 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Discord Bot — Temp Voice System
+
+The API server also runs a Discord bot (`artifacts/api-server/src/bot/`) with a full temporary voice channel system:
+
+- **Generator channel**: `1488997560415682640` — joining this channel creates a temp voice room
+- **Required role**: `1488521626059542538` — users must have this role to create rooms
+- **Room naming**: random emoji from a curated list + ` ・ ` + user display name
+- **Embed color**: `#0a4939`
+- **Control panel**: sent once per room (never re-sent), updated in-place on all state changes
+- **Buttons**: Lock, Unlock, Trust, Untrust, Kick, Rename, Set Limit, Claim
+- **Member permissions**: Read Message History, Voice Activity, Send Message, Video, Soundboard, Use App Commands, Use Activities — NO Attach Files, NO Embed Links, NO Mute Members, NO Manage Channel
+- **Auto-delete**: room is deleted when the last member leaves
+- **Auto-claim**: ownership passes to the next member when the owner leaves
+- **Cooldown**: 10s per-user cooldown to prevent spam creation
+- **Ghost cleanup**: on startup, any empty temp rooms from a previous session are deleted
+- **Startup permission check**: bot logs a warning if it is missing Manage Channels or Move Members
+- **Interaction safety**: all buttons `deferUpdate()` immediately before any API work to avoid "This interaction failed" errors
+- **Embed overflow protection**: member list truncated with `+ N more` if it would exceed Discord limits
+
 ## Structure
 
 ```text

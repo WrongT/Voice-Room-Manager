@@ -50,6 +50,10 @@ const rooms = new Map<string, TempRoom>();
 const creationCooldown = new Map<string, number>();
 const COOLDOWN_MS = 10_000;
 
+// Lock: prevents two concurrent "first-send" calls from racing and sending the panel twice.
+// Once panelMessageId is set on the room, all subsequent calls just edit — the lock only guards the initial send.
+const panelSendLock = new Set<string>();
+
 function buildPanel(room: TempRoom, channel: VoiceChannel): EmbedBuilder {
   const owner = channel.guild.members.cache.get(room.ownerId);
   const ownerTag = owner ? `<@${room.ownerId}>` : `<@${room.ownerId}>`;
@@ -147,18 +151,28 @@ async function sendOrUpdatePanel(
   const embed = buildPanel(room, channel);
   const rows = buildButtons(room.locked);
 
+  // If we already have a panel, just edit it — no lock needed.
   if (room.panelMessageId) {
     try {
       const msg = await textChannel.messages.fetch(room.panelMessageId);
       await msg.edit({ embeds: [embed], components: rows });
       return;
     } catch {
+      // Message was deleted — fall through to re-send below.
       room.panelMessageId = null;
     }
   }
 
-  const msg = await textChannel.send({ embeds: [embed], components: rows });
-  room.panelMessageId = msg.id;
+  // Guard: if another async path is already sending the first panel for this room, skip.
+  if (panelSendLock.has(channel.id)) return;
+  panelSendLock.add(channel.id);
+
+  try {
+    const msg = await textChannel.send({ embeds: [embed], components: rows });
+    room.panelMessageId = msg.id;
+  } finally {
+    panelSendLock.delete(channel.id);
+  }
 }
 
 async function applyRoomPermissions(
@@ -304,10 +318,12 @@ export function setupTempVoice(client: Client): void {
 
         await member.voice.setChannel(newCh).catch(() => {});
         logger.info({ channelId: newCh.id, owner: member.id }, "Temp voice room created");
-        // Panel is sent by the voiceStateUpdate that fires when the owner moves into the new channel
+        // Panel is sent exactly once by the voiceStateUpdate that fires when the owner joins the new channel.
       } catch (err) {
         logger.error({ err }, "Failed to create temp voice channel");
       }
+      // Always return after handling a generator join — prevent fall-through to the update blocks below.
+      return;
     }
 
     if (oldState.channelId && rooms.has(oldState.channelId)) {

@@ -97,51 +97,43 @@ function truncateMembers(members: string[]): string {
   return `${built} + **${remaining} more**`;
 }
 
-function buildButtons(locked: boolean): ActionRowBuilder<ButtonBuilder>[] {
+function buildButtons(_locked: boolean): ActionRowBuilder<ButtonBuilder>[] {
   const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("tv_rename")
+      .setLabel("Rename")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("tv_limit")
+      .setLabel("Set Limit")
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId("tv_lock")
       .setLabel("Lock")
-      .setStyle(ButtonStyle.Danger)
-      .setEmoji("🔒"),
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId("tv_unlock")
       .setLabel("Unlock")
-      .setStyle(ButtonStyle.Success)
-      .setEmoji("🔓"),
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId("tv_trust")
-      .setLabel("Trust")
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji("✅"),
-    new ButtonBuilder()
-      .setCustomId("tv_untrust")
-      .setLabel("Untrust")
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji("❌"),
-    new ButtonBuilder()
-      .setCustomId("tv_kick")
-      .setLabel("Kick")
-      .setStyle(ButtonStyle.Danger)
-      .setEmoji("👢"),
+      .setCustomId("tv_claim")
+      .setLabel("Claim")
+      .setStyle(ButtonStyle.Secondary),
   );
 
   const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId("tv_rename")
-      .setLabel("Rename")
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji("✏️"),
+      .setCustomId("tv_trust")
+      .setLabel("Trust User")
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId("tv_limit")
-      .setLabel("Set Limit")
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji("🔢"),
+      .setCustomId("tv_untrust")
+      .setLabel("Untrust User")
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId("tv_claim")
-      .setLabel("Claim")
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji("👑"),
+      .setCustomId("tv_kick")
+      .setLabel("Kick User")
+      .setStyle(ButtonStyle.Danger),
   );
 
   return [row1, row2];
@@ -311,8 +303,8 @@ export function setupTempVoice(client: Client): void {
         rooms.set(newCh.id, room);
 
         await member.voice.setChannel(newCh).catch(() => {});
-        await sendOrUpdatePanel(newCh as VoiceChannel, room);
         logger.info({ channelId: newCh.id, owner: member.id }, "Temp voice room created");
+        // Panel is sent by the voiceStateUpdate that fires when the owner moves into the new channel
       } catch (err) {
         logger.error({ err }, "Failed to create temp voice channel");
       }

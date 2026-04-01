@@ -53,7 +53,8 @@ const panelSendLock = new Set<string>();
 
 function buildPanel(room: TempRoom, channel: VoiceChannel): EmbedBuilder {
   const owner = channel.guild.members.cache.get(room.ownerId);
-  const ownerTag = owner ? `<@${room.ownerId}>` : `<@${room.ownerId}>`;
+  const ownerTag = `<@${room.ownerId}>`;
+  const avatarUrl = owner?.user.displayAvatarURL({ size: 256 }) ?? null;
 
   const voiceMembers = channel.members
     .filter((m) => !m.user.bot)
@@ -77,6 +78,8 @@ function buildPanel(room: TempRoom, channel: VoiceChannel): EmbedBuilder {
     )
     .setFooter({ text: "Temp Voice • Control Panel" })
     .setTimestamp();
+
+  if (avatarUrl) embed.setThumbnail(avatarUrl);
 
   return embed;
 }

@@ -18,9 +18,6 @@ import {
   VoiceChannel,
   TextChannel,
   OverwriteType,
-  CategoryChannel,
-  Message,
-  InteractionResponse,
 } from "discord.js";
 import { logger } from "../lib/logger";
 
@@ -179,9 +176,6 @@ async function applyRoomPermissions(
   channel: VoiceChannel,
   room: TempRoom,
 ): Promise<void> {
-  const guild = channel.guild;
-  const everyone = guild.roles.everyone;
-
   const basePerms = [
     PermissionsBitField.Flags.ReadMessageHistory,
     PermissionsBitField.Flags.SendMessages,
@@ -202,12 +196,28 @@ async function applyRoomPermissions(
     deny?: bigint[];
   }[] = [
     {
-      id: everyone.id,
+      id: ALLOWED_ROLE_ID,
       type: OverwriteType.Role,
-      allow: [],
+      allow: room.locked ? [] : basePerms,
+      // When locked: only deny Connect — View Channel stays open so they can still see the room
       deny: room.locked
-        ? [PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.ViewChannel]
-        : [],
+        ? [
+            PermissionsBitField.Flags.Connect,
+            PermissionsBitField.Flags.AttachFiles,
+            PermissionsBitField.Flags.EmbedLinks,
+            PermissionsBitField.Flags.MuteMembers,
+            PermissionsBitField.Flags.ManageChannels,
+            PermissionsBitField.Flags.ManageRoles,
+            PermissionsBitField.Flags.MoveMembers,
+          ]
+        : [
+            PermissionsBitField.Flags.AttachFiles,
+            PermissionsBitField.Flags.EmbedLinks,
+            PermissionsBitField.Flags.MuteMembers,
+            PermissionsBitField.Flags.ManageChannels,
+            PermissionsBitField.Flags.ManageRoles,
+            PermissionsBitField.Flags.MoveMembers,
+          ],
     },
   ];
 
@@ -215,7 +225,8 @@ async function applyRoomPermissions(
     overwrites.push({
       id: uid,
       type: OverwriteType.Member,
-      allow: [PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.ViewChannel],
+      // Only Connect needs to be explicitly allowed — View Channel is never denied
+      allow: [PermissionsBitField.Flags.Connect],
       deny: [],
     });
   }
@@ -266,7 +277,7 @@ export function setupTempVoice(client: Client): void {
           position: genChannel ? (genChannel as any).rawPosition + 1 : undefined,
           permissionOverwrites: [
             {
-              id: guild.roles.everyone.id,
+              id: ALLOWED_ROLE_ID,
               allow: [
                 PermissionsBitField.Flags.ReadMessageHistory,
                 PermissionsBitField.Flags.SendMessages,

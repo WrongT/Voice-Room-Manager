@@ -1,3 +1,10 @@
+import express from "express";
+
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Bot is running ✅");
+});
 import { Client, GatewayIntentBits, Partials, PermissionsBitField } from "discord.js";
 import { logger } from "../lib/logger";
 import { setupTempVoice, cleanupGhostRooms } from "./tempVoice";
@@ -57,7 +64,9 @@ export function startBot(): void {
   });
 
   setupTempVoice(client);
-
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Web server running");
+});
   client.login(token).catch((err) => {
     logger.error({ err }, "Failed to login to Discord");
   });
